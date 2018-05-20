@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "470573270918",
+    "firebase_url": "https://stratego-11bf1.firebaseio.com",
+    "project_id": "stratego-11bf1",
+    "storage_bucket": "stratego-11bf1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470573270918:android:031b9f6139017e14",
+        "android_client_info": {
+          "package_name": "com.kakaboc.stratego"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "470573270918-lb3157qq26eb1sbk5sr8e54adprpb779.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kakaboc.stratego",
+            "certificate_hash": "3d410d8963a8499c48f358279c26f130202e382f"
+          }
+        },
+        {
+          "client_id": "470573270918-p96lsrtr535cf5qc6piv0ki6nuuqekit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgpnqg_he6hbmTRwKADA0swdCUtg9EUrQ"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "470573270918-p96lsrtr535cf5qc6piv0ki6nuuqekit.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

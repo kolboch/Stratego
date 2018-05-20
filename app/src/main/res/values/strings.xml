@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Stratego</string>
+    <string name="choose_mode_label">Choose game mode</string>
+    <string name="pvp">player vs player</string>
+    <string name="pvai">player vs ai</string>
+    <string name="aivai">ai vs ai</string>
+    <string name="player">player</string>
+    <string name="zero">0</string>
+</resources>
