@@ -1,26 +1,30 @@
 package com.kakaboc.stratego.model
 
+import android.os.Handler
 import android.util.Log
 
 /**
  * Created by Karlo on 2018-05-20.
  */
+
+const val MAX_COMPUTATION = 3500000
+
 class Game(
         val rows: Int,
         val cols: Int,
         val player1: Player,
         val player2: Player
 ) {
-
+    var moves = 0
     var score1 = 0
     var score2 = 0
     var boardStates = Array(rows, { Array(cols, { FieldState.Neutral }) })
     lateinit var playerToMove: Player
     lateinit var updateGameViewCallback: (Int, Int) -> Unit
+    lateinit var showResultCallback: (GameResult) -> Unit
 
     fun makeMove(x: Int, y: Int) {
         if (boardStates[x][y] == FieldState.Neutral) {
-            //check points etc. // check if ending game
             boardStates[x][y] = playerToMove.fieldState
             val points = getMovePoints(x, y, playerToMove.fieldState)
             if (playerToMove == player1) {
@@ -28,14 +32,105 @@ class Game(
             } else {
                 score2 += points
             }
+            moves++
+            if (gameEnded()) {
+                updateGameViewCallback.invoke(score1, score2)
+                showResultCallback.invoke(getWinner())
+                Handler().postDelayed({
+                    resetGameState()
+                    updateGameViewCallback(score1, score2)
+                }, 2000)
+            }
             playerToMove = if (playerToMove == player1) player2 else player1
         }
         updateGameViewCallback.invoke(score1, score2)
-        if (playerToMove.type == GamePlayer.AI) {
-            Thread.sleep(500)
-            //make move with min max
+        if (playerToMove.type == GamePlayer.AI && !gameEnded()) {
+            val move = if (playerToMove == player1) {
+                generateMoveAI(boardStates, playerToMove.fieldState, player2.fieldState)
+            } else {
+                generateMoveAI(boardStates, playerToMove.fieldState, player1.fieldState)
+            }
+            makeMove(move.first, move.second)
         }
     }
+
+    private fun generateMoveAI(board: Array<Array<FieldState>>, maximizerField: FieldState, minimizerField: FieldState): Pair<Int, Int> {
+        var bestX = -1
+        var bestY = -1
+        var bestMove = Int.MIN_VALUE
+        var scoreDelta = score1 - score2
+        if (player1.fieldState != maximizerField) {
+            scoreDelta = score2 - score1
+        }
+        for (i in 0 until rows) {
+            for (j in 0 until cols) {
+                if (board[i][j] == FieldState.Neutral) {
+                    Log.v("Game", "Call for move: $i, $j")
+                    board[i][j] = maximizerField
+                    val moveScore = getMovePoints(i, j, maximizerField)
+                    val score = minmax(1, false, maximizerField, minimizerField, scoreDelta + moveScore, board, Int.MIN_VALUE, Int.MAX_VALUE)
+                    board[i][j] = FieldState.Neutral
+                    Log.v("Game", "Score for move $i, $j, $score")
+                    if (score > bestMove) {
+                        bestMove = score
+                        bestX = i
+                        bestY = j
+                    }
+                }
+            }
+        }
+        Log.v("Game", "move: $bestX, $bestY")
+        return Pair(bestX, bestY)
+    }
+
+    private fun minmax(depth: Int, maximizer: Boolean, maximizerField: FieldState, minimizerField: FieldState, score: Int,
+                       board: Array<Array<FieldState>>, alpha: Int, beta: Int): Int {
+        var depthComputation = 1
+        (cols * rows - depth until cols * rows).forEach { depthComputation *= it }
+        if (depthComputation >= MAX_COMPUTATION || depth == (cols * rows - moves)) {
+            return score
+        }
+        if (maximizer) {
+            var best = Integer.MIN_VALUE
+            for (i in 0 until rows) {
+                for (j in 0 until cols) {
+                    if (board[i][j] == FieldState.Neutral) {
+                        board[i][j] = maximizerField
+                        val moveScore = getMovePoints(i, j, maximizerField)
+                        val bestEval = minmax(depth + 1, false, maximizerField, minimizerField, score + moveScore, board, alpha, beta)
+                        best = kotlin.math.max(best, bestEval)
+                        board[i][j] = FieldState.Neutral
+                        val alpha = kotlin.math.max(alpha, best)
+                        //pruning
+                        if (beta <= alpha) {
+                            break
+                        }
+                    }
+                }
+            }
+            return best
+        } else {
+            var best = Integer.MAX_VALUE
+            for (i in 0 until rows) {
+                for (j in 0 until cols) {
+                    if (board[i][j] == FieldState.Neutral) {
+                        board[i][j] = minimizerField
+                        val moveScore = getMovePoints(i, j, minimizerField)
+                        val bestEval = minmax(depth + 1, true, maximizerField, minimizerField, score - moveScore, board, alpha, beta)
+                        board[i][j] = FieldState.Neutral
+                        best = kotlin.math.min(best, bestEval)
+                        val beta = kotlin.math.min(beta, best)
+                        //pruning
+                        if (beta <= alpha) {
+                            break
+                        }
+                    }
+                }
+            }
+            return best
+        }
+    }
+
 
     private fun getMovePoints(x: Int, y: Int, playersField: FieldState): Int {
         //column
@@ -202,15 +297,27 @@ class Game(
                 scoreRL++
             }
         }
-        val sum = scoreColumn + scoreRow + scoreLR + scoreRL
-        if (sum > 0) {
-            Log.v("GAME", "columnScore: $scoreColumn, row: $scoreRow, lR: $scoreLR, RL: $scoreRL")
-        }
-        return sum
+        return scoreColumn + scoreRow + scoreLR + scoreRL
     }
 
-    fun clearBoard() {
+    private fun resetGameState() {
         boardStates = Array(rows, { Array(cols, { FieldState.Neutral }) })
+        moves = 0
+        score1 = 0
+        score2 = 0
+        playerToMove = player1
+    }
+
+    private fun gameEnded(): Boolean {
+        return moves == (rows * cols)
+    }
+
+    private fun getWinner(): GameResult {
+        return when {
+            score1 > score2 -> GameResult.Player1
+            score2 > score1 -> GameResult.Player2
+            else -> GameResult.Draw
+        }
     }
 }
 
@@ -225,6 +332,12 @@ enum class FieldState(private val symbol: Int) {
     Cross(1),
     Circle(-1),
     Neutral(0)
+}
+
+enum class GameResult(private val code: Int) {
+    Player1(11),
+    Player2(22),
+    Draw(33)
 }
 
 class Player(val type: GamePlayer, val fieldState: FieldState)

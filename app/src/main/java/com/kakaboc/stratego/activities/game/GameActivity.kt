@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.widget.Toast
 import com.kakaboc.stratego.R
 import com.kakaboc.stratego.model.FieldState
 import com.kakaboc.stratego.model.Game
@@ -37,17 +38,20 @@ class GameActivity : AppCompatActivity() {
 
     private fun initGame() {
         val sharedPreferences = getSharedPreferences(GAME_SHARED_PREFS, Context.MODE_PRIVATE)
-        val rows = sharedPreferences.getInt(GAME_ROWS, 5)
-        val cols = sharedPreferences.getInt(GAME_COLS, 5)
+        val rows = sharedPreferences.getInt(GAME_ROWS, 4)
+        val cols = sharedPreferences.getInt(GAME_COLS, 4)
         game = Game(
                 rows, cols,
                 Player(GamePlayer.Human, FieldState.Circle),
-                Player(GamePlayer.Human, FieldState.Cross)
+                Player(GamePlayer.AI, FieldState.Cross)
         )
         game.playerToMove = game.player1
         game.updateGameViewCallback = { points1, points2 ->
             updateScores(points1, points2)
             updateBoardView()
+        }
+        game.showResultCallback = { result ->
+            Toast.makeText(this, "Winner is ${result.name}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -59,7 +63,9 @@ class GameActivity : AppCompatActivity() {
 
     private fun initCellListener() {
         adapter.onCellClickListener = { x, y ->
-            game.makeMove(x, y)
+            if (game.playerToMove.type != GamePlayer.AI) {
+                game.makeMove(x, y)
+            }
         }
     }
 
