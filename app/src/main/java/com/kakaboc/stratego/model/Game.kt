@@ -45,12 +45,16 @@ class Game(
         }
         updateGameViewCallback.invoke(score1, score2)
         if (playerToMove.type == GamePlayer.AI && !gameEnded()) {
-            val move = if (playerToMove == player1) {
-                generateMoveAI(boardStates, playerToMove.fieldState, player2.fieldState)
-            } else {
-                generateMoveAI(boardStates, playerToMove.fieldState, player1.fieldState)
-            }
-            makeMove(move.first, move.second)
+            Thread(Runnable {
+                Handler().postDelayed({
+                    val move = if (playerToMove == player1) {
+                        generateMoveAI(boardStates, playerToMove.fieldState, player2.fieldState)
+                    } else {
+                        generateMoveAI(boardStates, playerToMove.fieldState, player1.fieldState)
+                    }
+                    makeMove(move.first, move.second)
+                }, 500)
+            }).run()
         }
     }
 
@@ -135,13 +139,7 @@ class Game(
     private fun getMovePoints(x: Int, y: Int, playersField: FieldState): Int {
         //column
         var scoreColumn = 0
-        var filler = true
-        for (i in 0 until boardStates.size) {
-            if (boardStates[i][y] == FieldState.Neutral) {
-                filler = false
-                break
-            }
-        }
+        var filler = (0 until boardStates.size).none { boardStates[it][y] == FieldState.Neutral }
         if (filler) {
             var tempX = x
             while (tempX - 1 >= 0 && boardStates[tempX - 1][y] == playersField) {
@@ -159,13 +157,7 @@ class Game(
         }
         //row
         var scoreRow = 0
-        filler = true
-        for (j in 0 until boardStates[0].size) {
-            if (boardStates[x][j] == FieldState.Neutral) {
-                filler = false
-                break
-            }
-        }
+        filler = (0 until boardStates[0].size).none { boardStates[x][it] == FieldState.Neutral }
         if (filler) {
             var tempY = y
             while (tempY + 1 < cols && boardStates[x][tempY + 1] == playersField) {
@@ -300,7 +292,7 @@ class Game(
         return scoreColumn + scoreRow + scoreLR + scoreRL
     }
 
-    private fun resetGameState() {
+    fun resetGameState() {
         boardStates = Array(rows, { Array(cols, { FieldState.Neutral }) })
         moves = 0
         score1 = 0
@@ -318,6 +310,11 @@ class Game(
             score2 > score1 -> GameResult.Player2
             else -> GameResult.Draw
         }
+    }
+
+    fun initAIvsAI() {
+        val move = generateMoveAI(boardStates, player1.fieldState, player2.fieldState)
+        makeMove(move.first, move.second)
     }
 }
 
